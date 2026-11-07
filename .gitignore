@@ -1,3 +1,4 @@
+# DO NOT EDIT — generated from src/domain/blueprints/gitignore.ts; run `claude-factory work commit --message "<your-message>"` to refresh
 node_modules
 dist/
 /manifest.json
@@ -17,3 +18,9 @@ dist/
 .claude/cache/
 .claude/tmp/
 .claude/logs/
+# Emitted by guard on every run, never tracked: the editor and the language service read it from here
+oxlint.config.ts
+# Emitted by guard before it linted with Oxlint; a copy left in a checkout stays untracked
+eslint.config.ts
+# Written for the length of one tsc run and removed after it
+.panoptic-guard-tsc.tsconfig.json

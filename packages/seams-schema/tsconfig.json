@@ -1,0 +1,70 @@
+{
+  "//": "DO NOT EDIT — generated from src/domain/blueprints/tsconfig-model.ts",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": [
+      "ES2022"
+    ],
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "useDefineForClassFields": true,
+    "skipLibCheck": true,
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": false,
+    "types": [
+      "node"
+    ],
+    "composite": true,
+    "customConditions": [
+      "source"
+    ],
+    "declaration": true,
+    "declarationMap": true,
+    "outDir": "dist",
+    "emitDeclarationOnly": true,
+    "typeRoots": [
+      "./.guard/node_modules/@types"
+    ],
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "vitest": [
+        "./.guard/node_modules/vitest"
+      ]
+    }
+  },
+  "include": [
+    "src",
+    "tests",
+    "*.ts",
+    "*.config.mjs"
+  ],
+  "exclude": [
+    "**/fixtures/**/*.js",
+    "**/fixtures/**/*.mjs",
+    "**/fixtures/**/*.cjs",
+    "**/__fixtures__/**/*.js",
+    "**/__fixtures__/**/*.mjs",
+    "**/__fixtures__/**/*.cjs"
+  ]
+}

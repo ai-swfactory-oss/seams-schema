@@ -1,0 +1,11 @@
+{
+  "files.readonlyInclude": {
+    ".gitattributes": true,
+    ".github/workflows/guard-presence-check.yml": true,
+    ".gitignore": true,
+    ".nvmrc": true,
+    ".vscode/settings.json": true,
+    "oxlint.config.ts": true,
+    "tsconfig.json": true
+  }
+}

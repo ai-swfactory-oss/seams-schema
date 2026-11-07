@@ -1,0 +1,9 @@
+# DO NOT EDIT — generated from src/domain/blueprints/gitattributes.ts; run `claude-factory work commit --message "<your-message>"` to refresh
+
+.gitattributes linguist-generated=true
+.github/workflows/guard-presence-check.yml linguist-generated=true
+.gitignore linguist-generated=true
+.nvmrc linguist-generated=true
+.vscode/settings.json linguist-generated=true
+oxlint.config.ts linguist-generated=true
+tsconfig.json linguist-generated=true

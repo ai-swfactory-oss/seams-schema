@@ -1,4 +1,8 @@
 {
   "version": 4,
-  "defaultBranch": "main"
+  "defaultBranch": "main",
+  "guard": {},
+  "packages": {
+    "@ai-swfactory-oss/seams-schema": { "kind": "vocabulary" }
+  }
 }

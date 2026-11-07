@@ -1,0 +1,147 @@
+# DO NOT EDIT — generated from src/domain/blueprints/guard-presence-check.ts; run `claude-factory work commit --message "<your-message>"` to refresh
+name: Guard presence check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
+
+jobs:
+  presence-check:
+    runs-on: ubuntu-latest
+    # CI verifies receipts; it does not produce them. On a pull request the
+    # developer signs the receipt locally through the commit verb, which
+    # pushes the receipt ref alongside the commit. On a push to main the
+    # commit has already landed: a commit without a receipt there reached
+    # main outside the landing verb, which is an incident to report, and no
+    # verb repairs it; the next landing restores a receipted head. This job
+    # confirms that the checked-out commit carries a complete signed receipt
+    # bound to its own tree — one checkout, one notes tip, one command.
+    #
+    # Fifteen minutes, not five: the verifier is a published release of the
+    # receipt verifier package, which carries the whole toolchain.
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      # A receipt is bound to a single commit's tree and references neither a
+      # parent nor a diff, so verifying one needs neither ancestry nor a base.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          registry-url: https://npm.pkg.github.com/
+          scope: '@ai-swfactory'
+          always-auth: true
+
+      - name: Fetch the receipt note
+        run: |
+          set -euo pipefail
+          # `--refmap=` is mandatory: it restricts this invocation to the
+          # explicit refspecs so a configured
+          # `remote.origin.fetch` cannot piggyback and force-clobber a local
+          # ref. The notes refspec is a pattern, so an origin that holds no
+          # notes ref at all is not a failed fetch: a pattern that matches
+          # nothing fetches nothing. `--depth=1` takes the receipt refs and
+          # the notes tip without the thousands of ancestor commits behind
+          # them. A failed fetch read no receipt, so it ends the step as
+          # could-not-determine and never reaches a verdict that would call
+          # the receipt absent.
+          #
+          # On a pull request the head may reach origin before its receipt
+          # note: the landing verb re-attests while CI runs. The step then
+          # polls origin for the head's note every 10 seconds for at most
+          # 480 seconds, a bound inside the job timeout. A push to main
+          # reads the notes tip once. Waiting never passes the check: only the
+          # verifier below does, by reading a passing receipt for the head.
+          head_sha="$(git rev-parse HEAD)"
+          wait_seconds=0
+          if [ "${GITHUB_EVENT_NAME:-}" = "pull_request" ]; then
+            wait_seconds=480
+          fi
+          deadline=$(( $(date +%s) + wait_seconds ))
+          while true; do
+            fetch_status=0
+            git fetch --refmap= --depth=1 origin '+refs/notes/validation*:refs/notes/validation*' '+refs/receipts/*:refs/receipts/*' || fetch_status=$?
+            if [ "$fetch_status" -ne 0 ]; then
+              echo "::error::could-not-determine: fetching the receipt refs from origin failed (git exit ${fetch_status}, output above), so no receipt was read and nothing established that the receipt is absent."
+              if [ "${GITHUB_EVENT_NAME:-}" = "push" ]; then
+                echo "::error::Report this failed fetch as an incident. The next landing through \`claude-factory work finish \"<issue>\"\` checks main again."
+              else
+                echo "::error::Report this failed fetch as an incident. The next push through \`claude-factory work commit --message \"<your-message>\"\` checks the pull request again."
+              fi
+              exit 1
+            fi
+            if git cat-file -e "refs/receipts/$head_sha" 2> /dev/null || git notes --ref=validation show "$head_sha" > /dev/null 2>&1; then
+              break
+            fi
+            remaining=$(( deadline - $(date +%s) ))
+            if [ "$remaining" -le 0 ]; then
+              if [ "$wait_seconds" -gt 0 ]; then
+                echo "::error::no receipt note for ${head_sha} appeared on origin within the ${wait_seconds}-second wait, so the verifier below reads no receipt."
+              fi
+              break
+            fi
+            pause=10
+            if [ "$remaining" -lt "$pause" ]; then
+              pause="$remaining"
+            fi
+            echo "No receipt note for ${head_sha} on origin yet; polling again in ${pause} seconds (${remaining} seconds left)."
+            sleep "$pause"
+          done
+
+      # The verifier is the release that signed the receipt: the note's
+      # `host` names it, so the verifying build knows every not-run reason
+      # the signing one wrote. Every guard that writes the field writes it
+      # on every note, null when its caller named no signer, so a note
+      # without the field was signed by an older guard and the step installs
+      # `latest`, the promoted release. A note that declares the field but
+      # names no strict semver release of the verifier package is refused.
+      # The step never installs `next` and echoes no unvalidated note content.
+      - name: Install the receipt verifier
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.AI_SWFACTORY_PACKAGES_TOKEN }}
+        run: |
+          set -euo pipefail
+          npm config set '@ai-swfactory:registry' 'https://npm.pkg.github.com/'
+          npm config set '@ai-swfactory-oss:registry' 'https://npm.pkg.github.com/'
+          strict_semver='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)(\.(0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*)?(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$'
+          version=latest
+          reason="the receipt note was signed by a guard that predates the host field"
+          head_commit="$(git rev-parse HEAD)"
+          note="$(git cat-file blob "refs/receipts/$head_commit" 2>/dev/null || git notes --ref=validation show HEAD 2>/dev/null || true)"
+          declares_host="$(printf '%s' "$note" | jq -r 'if type == "object" then (if has("host") then "yes" else "no" end) else "no" end' 2>/dev/null || true)"
+          if [ "$declares_host" = "yes" ]; then
+            host_name="$(printf '%s' "$note" | jq -r '.host | objects | .name | strings' 2>/dev/null || true)"
+            host_version="$(printf '%s' "$note" | jq -r '.host | objects | .version | strings' 2>/dev/null || true)"
+            if [ "$host_name" != "@ai-swfactory/claude-factory" ] || ! [[ "$host_version" =~ $strict_semver ]]; then
+              echo "::error::the receipt note of $(git rev-parse HEAD) lacks its signer: it carries the host field, so a guard that records the signing @ai-swfactory/claude-factory release wrote it, but the field names no strict semver release of @ai-swfactory/claude-factory, so no verifier can be chosen for it."
+              echo "::error::Run \`claude-factory work commit --message \"<your-message>\"\` locally with a @ai-swfactory/claude-factory that names itself as the signer; it signs the receipt again and pushes it alongside the commit."
+              exit 1
+            fi
+            version="$host_version"
+            reason="the receipt note names @ai-swfactory/claude-factory@${host_version} as its signer"
+          fi
+          npm install -g "@ai-swfactory/claude-factory@${version}"
+          verifier="$(node -p "require('$(npm root -g)/@ai-swfactory/claude-factory/package.json').version")"
+          echo "::notice title=Receipt verifier::@ai-swfactory/claude-factory@${verifier} (${reason})"
+          echo "Receipt verified by \`@ai-swfactory/claude-factory@${verifier}\`" >> "${GITHUB_STEP_SUMMARY:-/dev/null}"
+
+      - name: Verify receipt presence
+        run: |
+          set -euo pipefail
+          if claude-factory status --receipt; then
+            exit 0
+          fi
+          echo "::error::the checked-out commit does not carry a complete signed receipt bound to its own tree (detail above)."
+          if [ "${GITHUB_EVENT_NAME:-}" = "push" ]; then
+            echo "::error::This commit is on main, so it reached main outside \`claude-factory work finish \"<issue>\"\`. That is an incident: report it. No command repairs a landed commit; the next landing through \`claude-factory work finish \"<issue>\"\` restores a receipted head."
+          else
+            echo "::error::CI verifies receipts; it does not produce them. Run \`claude-factory work commit --message \"<your-message>\"\` locally — it signs the receipt and pushes it alongside the commit."
+          fi
+          exit 1
