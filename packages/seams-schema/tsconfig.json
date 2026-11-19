@@ -26,7 +26,6 @@
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
     "useDefineForClassFields": true,
-    "skipLibCheck": true,
     "allowJs": true,
     "checkJs": true,
     "noEmit": false,
@@ -58,13 +57,5 @@
     "tests",
     "*.ts",
     "*.config.mjs"
-  ],
-  "exclude": [
-    "**/fixtures/**/*.js",
-    "**/fixtures/**/*.mjs",
-    "**/fixtures/**/*.cjs",
-    "**/__fixtures__/**/*.js",
-    "**/__fixtures__/**/*.mjs",
-    "**/__fixtures__/**/*.cjs"
   ]
 }
