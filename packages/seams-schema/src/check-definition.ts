@@ -118,7 +118,9 @@ const objectIssues = (node: ObjectNode, path: Path, definitions: Definitions): I
 
 const recordIssues = (node: RecordNode, path: Path, definitions: Definitions): Issue[] => {
   const keys = node.keys === undefined ? [] : walk(node.keys, [...path, 'keys'], definitions)
-  return [...walk(node.values, [...path, 'values'], definitions), ...keys]
+  const coerced =
+    node.keys?.coerceFrom === undefined ? [] : [invalid([...path, 'keys', 'coerceFrom'], "coerceFrom has no effect on a record's keys")]
+  return [...walk(node.values, [...path, 'values'], definitions), ...keys, ...coerced]
 }
 
 const discriminatedUnionIssues = (node: DiscriminatedUnionNode, path: Path, definitions: Definitions): Issue[] => {
@@ -127,7 +129,9 @@ const discriminatedUnionIssues = (node: DiscriminatedUnionNode, path: Path, defi
     const keyed = member.shape[node.discriminator]?.type === 'literal'
     const keyPath = [...memberPath, 'shape', node.discriminator]
     const unkeyed = keyed ? [] : [invalid(keyPath, `member ${String(index)} has no literal ${node.discriminator}`)]
-    return [...walk(member, memberPath, definitions), ...unkeyed]
+    const nulled =
+      member.nullAs === undefined ? [] : [invalid([...memberPath, 'nullAs'], 'nullAs has no effect on a discriminatedUnion member')]
+    return [...walk(member, memberPath, definitions), ...unkeyed, ...nulled]
   })
 }
 

@@ -1,24 +1,7 @@
 import { describe, expect, expectTypeOf, it } from 'vitest'
 
-import { type Definition, schema, SchemaError } from '../src/index'
-
-const isDefinitionShaped = (value: unknown): value is Definition => typeof value === 'object'
-
-const untyped = (value: unknown): Definition => {
-  if (isDefinitionShaped(value)) return value
-  throw new TypeError('a definition fixture must be an object')
-}
-
-const thrownBy = (run: () => unknown): unknown => {
-  try {
-    run()
-  } catch (error) {
-    return error
-  }
-  return undefined
-}
-
-const refusalOf = (definition: unknown): unknown => thrownBy(() => schema(untyped(definition)))
+import { schema, SchemaError } from '../src/index'
+import { refusalOf } from './refusal-of'
 
 const anything = { type: 'unknown', because: 'the value is opaque' } as const
 

@@ -1,15 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { schema, SchemaError } from '../src/index'
-
-const thrownBy = (run: () => unknown): unknown => {
-  try {
-    run()
-  } catch (error) {
-    return error
-  }
-  return undefined
-}
+import { thrownBy } from './refusal-of'
 
 describe('parse throws and safeParse returns the same issues', () => {
   it('parse throws SchemaError carrying exactly the issues safeParse returns for the same input (rejects issues that differ between the two)', () => {
